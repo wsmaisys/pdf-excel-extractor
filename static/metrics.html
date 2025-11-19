@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📊 Extraction Metrics Guide</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 20px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.95;
+        margin-bottom: 20px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+      }
+
+      .nav-links a:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .section {
+        margin-bottom: 50px;
+      }
+
+      .section h2 {
+        font-size: 1.8em;
+        color: #667eea;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .metric-card {
+        background: #f8f9ff;
+        border-left: 5px solid #667eea;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .metric-card:hover {
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        transform: translateX(4px);
+      }
+
+      .metric-card h3 {
+        font-size: 1.4em;
+        color: #764ba2;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .metric-card .definition {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        font-style: italic;
+        color: #555;
+        border-left: 3px solid #764ba2;
+      }
+
+      .metric-card .importance {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        color: #856404;
+        border-left: 3px solid #ffc107;
+      }
+
+      .metric-card .example {
+        background: #e8f4f8;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        color: #004085;
+        border-left: 3px solid #0c5460;
+        font-family: monospace;
+        font-size: 0.95em;
+        overflow-x: auto;
+      }
+
+      .range-bar {
+        background: #e0e0e0;
+        border-radius: 4px;
+        height: 30px;
+        margin: 15px 0;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .range-segment {
+        display: inline-block;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85em;
+        font-weight: 600;
+        color: white;
+      }
+
+      .range-excellent {
+        background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+        width: 25%;
+      }
+
+      .range-good {
+        background: linear-gradient(90deg, #17a2b8 0%, #138496 100%);
+        width: 15%;
+      }
+
+      .range-fair {
+        background: linear-gradient(90deg, #ffc107 0%, #e0a800 100%);
+        width: 35%;
+      }
+
+      .range-poor {
+        background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+        width: 25%;
+      }
+
+      .interpretation-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .interpretation-table th {
+        background: #667eea;
+        color: white;
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+      }
+
+      .interpretation-table td {
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .interpretation-table tr:hover {
+        background: #f8f9ff;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9em;
+      }
+
+      .status-exact {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-close {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-paraphrased {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .footer {
+        background: #f8f9ff;
+        padding: 30px 40px;
+        text-align: center;
+        color: #666;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .footer p {
+        margin-bottom: 10px;
+      }
+
+      .footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+
+      ul,
+      ol {
+        margin: 15px 0 15px 30px;
+      }
+
+      li {
+        margin: 8px 0;
+      }
+
+      strong {
+        color: #764ba2;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        padding: 2px 6px;
+        border-radius: 3px;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 1.8em;
+        }
+
+        .content {
+          padding: 20px;
+        }
+
+        .nav-links {
+          flex-direction: column;
+        }
+
+        .interpretation-table {
+          font-size: 0.9em;
+        }
+
+        .interpretation-table th,
+        .interpretation-table td {
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📊 Extraction Metrics Guide</h1>
+        <p>
+          Understanding quality metrics for PDF-to-Excel semantic extraction
+        </p>
+        <div class="nav-links">
+          <a href="/static/index.html">🏠 Back to Extractor</a>
+          <a href="/static/api.html">📚 API Docs</a>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- N-GRAM METRICS SECTION -->
+        <div class="section">
+          <h2>🔤 N-Gram Precision Metrics</h2>
+
+          <div class="metric-card">
+            <h3>1-Gram Precision (Unigram)</h3>
+            <div class="definition">
+              Percentage of individual words in the extracted value that appear
+              in the original PDF text.
+            </div>
+            <div class="importance">
+              <strong>⚡ Why It Matters:</strong> Measures vocabulary accuracy.
+              A high 1-gram score means the LLM used the correct words from the
+              source document. Low scores indicate the LLM introduced entirely
+              new vocabulary not present in the original PDF.
+            </div>
+            <div class="example">
+              <strong>Example:</strong><br />
+              Original (PDF): "The quick brown fox jumps over the lazy dog"<br />
+              Extracted: "The quick brown fox jumps over the dog"<br />
+              1-gram precision: 7/8 = 87.5% (missing "lazy")
+            </div>
+            <div class="interpretation-table">
+              <tr>
+                <th>Score Range</th>
+                <th>Interpretation</th>
+              </tr>
+              <tr>
+                <td>90-100%</td>
+                <td>✅ Excellent - All or nearly all words match the source</td>
+              </tr>
+              <tr>
+                <td>75-89%</td>
+                <td>
+                  ⚠️ Good - Most words match; minor omissions or additions
+                </td>
+              </tr>
+              <tr>
+                <td>50-74%</td>
+                <td>
+                  ❌ Fair - Significant word-level changes; possible
+                  paraphrasing
+                </td>
+              </tr>
+              <tr>
+                <td>&lt;50%</td>
+                <td>
+                  ❌ Poor - Major vocabulary differences; possible hallucination
+                </td>
+              </tr>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <h3>2-Gram Precision (Bigram)</h3>
+            <div class="definition">
+              Percentage of consecutive word-pairs in the extracted value that
+              appear in the original PDF text.
+            </div>
+            <div class="importance">
+              <strong>⚡ Why It Matters:</strong> Measures word order and
+              phrasing accuracy. While 1-gram might be high (all words present),
+              2-gram drops if words are reordered or separated. Detects subtle
+              paraphrasing where the same words are used but in different
+              sequences.
+            </div>
+            <div class="example">
+              <strong>Example:</strong><br />
+              Original (PDF): "The quick brown fox"<br />
+              Extracted: "The brown quick fox"<br />
+              1-gram precision: 100% (all 4 words present)<br />
+              2-gram precision: 50% (only "The" pairs match; "quick brown" vs
+              "brown quick" differ)
+            </div>
+            <div class="interpretation-table">
+              <tr>
+                <th>Score Range</th>
+                <th>Interpretation</th>
+              </tr>
+              <tr>
+                <td>90-100%</td>
+                <td>✅ Excellent - Word sequences preserved perfectly</td>
+              </tr>
+              <tr>
+                <td>75-89%</td>
+                <td>⚠️ Good - Mostly correct sequences; minor reordering</td>
+              </tr>
+              <tr>
+                <td>50-74%</td>
+                <td>❌ Fair - Significant reordering detected</td>
+              </tr>
+              <tr>
+                <td>&lt;50%</td>
+                <td>❌ Poor - Text heavily rearranged or rewritten</td>
+              </tr>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <h3>3-Gram Precision (Trigram)</h3>
+            <div class="definition">
+              Percentage of three-word sequences in the extracted value that
+              appear in the original PDF text.
+            </div>
+            <div class="importance">
+              <strong>⚡ Why It Matters:</strong> Measures phrase and
+              clause-level retention. This is where you detect if the LLM
+              preserved the original phrasing style and grammar. Low 3-gram
+              scores with high 1/2-gram scores indicate the LLM rearranged
+              larger chunks of text.
+            </div>
+            <div class="example">
+              <strong>Example:</strong><br />
+              Original (PDF): "The board of directors meets quarterly"<br />
+              Extracted: "The board meets quarterly"<br />
+              3-gram precision: 50% (only "The board" triplets match; "of
+              directors meets" vs "board meets quarterly" differ)
+            </div>
+            <div class="interpretation-table">
+              <tr>
+                <th>Score Range</th>
+                <th>Interpretation</th>
+              </tr>
+              <tr>
+                <td>85-100%</td>
+                <td>✅ Excellent - Phrases preserved exactly</td>
+              </tr>
+              <tr>
+                <td>70-84%</td>
+                <td>⚠️ Good - Minor phrase modifications</td>
+              </tr>
+              <tr>
+                <td>50-69%</td>
+                <td>❌ Fair - Phrases partially altered</td>
+              </tr>
+              <tr>
+                <td>&lt;50%</td>
+                <td>❌ Poor - Phrases significantly rewritten</td>
+              </tr>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <h3>4-Gram Precision (Quadgram)</h3>
+            <div class="definition">
+              Percentage of four-word sequences in the extracted value that
+              appear in the original PDF text.
+            </div>
+            <div class="importance">
+              <strong>⚡ Why It Matters:</strong>
+              <span class="highlight"
+                >Most important for assignment compliance.</span
+              >
+              Measures sentence-level and idiom retention. A high 4-gram score
+              indicates the LLM retained the exact original phrasing, grammar,
+              and sentence structure—fulfilling the "retain exact original
+              wording" requirement.
+            </div>
+            <div class="example">
+              <strong>Example:</strong><br />
+              Original (PDF): "Please submit your assignment by Friday
+              morning"<br />
+              Extracted: "Please submit your assignment by Friday morning"<br />
+              4-gram precision: 100% (all quadgrams match exactly)
+            </div>
+            <div class="interpretation-table">
+              <tr>
+                <th>Score Range</th>
+                <th>Interpretation</th>
+              </tr>
+              <tr>
+                <td>90-100%</td>
+                <td>
+                  <span class="status-badge status-exact">✅ EXACT</span> -
+                  Original wording perfectly preserved
+                </td>
+              </tr>
+              <tr>
+                <td>75-89%</td>
+                <td>
+                  <span class="status-badge status-close">⚠️ CLOSE</span> -
+                  Original intent retained; minor rewording
+                </td>
+              </tr>
+              <tr>
+                <td>&lt;75%</td>
+                <td>
+                  <span class="status-badge status-paraphrased"
+                    >❌ PARAPHRASED</span
+                  >
+                  - Significant rewording detected
+                </td>
+              </tr>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATUS CLASSIFICATION SECTION -->
+        <div class="section">
+          <h2>🏷️ Extraction Status Classifications</h2>
+
+          <div class="metric-card">
+            <h3><span class="status-badge status-exact">✅ EXACT</span></h3>
+            <div class="definition">
+              4-gram precision ≥ 90% — Original wording is preserved.
+            </div>
+            <p>
+              <strong>Meaning:</strong> The extracted value matches the original
+              PDF text with high fidelity. Sentence structure, phrasing, and
+              vocabulary are retained exactly or with only trivial variations
+              (e.g., extra spaces, punctuation).
+            </p>
+            <p>
+              <strong>Assignment Grade Impact:</strong> ✅
+              <strong>Meets requirement:</strong> "Retain exact original
+              wording, sentence structure, and phrasing."
+            </p>
+            <p>
+              <strong>Action:</strong> No review needed. Extract is ready for
+              submission.
+            </p>
+          </div>
+
+          <div class="metric-card">
+            <h3><span class="status-badge status-close">⚠️ CLOSE</span></h3>
+            <div class="definition">
+              4-gram precision 75–89% — Original meaning preserved with minor
+              rewording.
+            </div>
+            <p>
+              <strong>Meaning:</strong> The extracted value conveys the same
+              meaning as the PDF, but the LLM made minor changes: removed filler
+              words, restructured sentences slightly, or used synonyms. The core
+              information is intact.
+            </p>
+            <p>
+              <strong>Assignment Grade Impact:</strong> ⚠️
+              <strong>Partially meets requirement:</strong> Acceptable if
+              assignment allows minor rewording; flag if strict wording is
+              required.
+            </p>
+            <p>
+              <strong>Action:</strong> Review side-by-side with PDF. If
+              acceptable per assignment rubric, approve. Otherwise, request
+              manual correction.
+            </p>
+          </div>
+
+          <div class="metric-card">
+            <h3>
+              <span class="status-badge status-paraphrased"
+                >❌ PARAPHRASED</span
+              >
+            </h3>
+            <div class="definition">
+              4-gram precision &lt; 75% — Significant rewording detected.
+            </div>
+            <p>
+              <strong>Meaning:</strong> The extracted value has been
+              substantially rewritten. While the meaning may be preserved, the
+              wording, sentence structure, and phrasing differ significantly
+              from the original PDF.
+            </p>
+            <p>
+              <strong>Assignment Grade Impact:</strong> ❌
+              <strong>Does NOT meet requirement:</strong> "Retain exact original
+              wording, sentence structure, and phrasing." This may be flagged as
+              paraphrasing or incomplete extraction.
+            </p>
+            <p>
+              <strong>Action:</strong> Review the extracted value immediately.
+              Compare with PDF text. If the LLM hallucinated or invented
+              content, mark as rejected. If it's a legitimate compression,
+              consider whether the assignment allows it. Manual correction
+              recommended.
+            </p>
+          </div>
+        </div>
+
+        <!-- HOW METRICS ARE CALCULATED SECTION -->
+        <div class="section">
+          <h2>⚙️ How Metrics Are Calculated</h2>
+
+          <div class="metric-card">
+            <h3>N-Gram Extraction Process</h3>
+            <ol>
+              <li>
+                <strong>Tokenization:</strong> Original PDF text and extracted
+                value are split into individual words and punctuation marks
+                (tokens).
+              </li>
+              <li>
+                <strong>N-Gram Generation:</strong> For each value of n (1, 2,
+                3, 4), all possible sequences of n consecutive tokens are
+                extracted.
+                <div class="example">
+                  <strong>Example:</strong> "The quick brown" generates:<br />
+                  1-grams: [The, quick, brown]<br />
+                  2-grams: [(The, quick), (quick, brown)]<br />
+                  3-grams: [(The, quick, brown)]
+                </div>
+              </li>
+              <li>
+                <strong>Overlap Calculation:</strong> Count how many n-grams
+                from the extracted value appear in the original PDF text.
+              </li>
+              <li>
+                <strong>Precision Computation:</strong> Precision = (Matching
+                n-grams) / (Total n-grams in extracted value) × 100%
+              </li>
+            </ol>
+          </div>
+
+          <div class="metric-card">
+            <h3>Why N-Grams Matter for This Task</h3>
+            <ul>
+              <li>
+                <strong>1-grams:</strong> Detect if the LLM used completely
+                foreign vocabulary not in the PDF.
+              </li>
+              <li>
+                <strong>2-grams:</strong> Detect if words are reordered or the
+                sequence is altered.
+              </li>
+              <li>
+                <strong>3-grams:</strong> Detect if larger phrases are
+                compressed or rewritten.
+              </li>
+              <li>
+                <strong>4-grams:</strong> Detect if the overall sentence
+                structure and idiom are preserved (most critical for
+                assignments).
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ASSIGNMENT COMPLIANCE SECTION -->
+        <div class="section">
+          <h2>✍️ Assignment Compliance Guide</h2>
+
+          <div class="metric-card">
+            <h3>
+              Requirement: "Retain exact original wording, sentence structure,
+              and phrasing"
+            </h3>
+            <p><strong>What the assignment is asking for:</strong></p>
+            <ul>
+              <li>
+                Extract information from the PDF <strong>as-is</strong>, without
+                paraphrasing or rewriting.
+              </li>
+              <li>
+                Preserve the original author's voice, style, and phrasing.
+              </li>
+              <li>Maintain sentence structure and grammatical choices.</li>
+              <li>
+                Do not compress, simplify, or improve upon the original text.
+              </li>
+            </ul>
+
+            <p><strong>How to use metrics to verify compliance:</strong></p>
+            <div class="interpretation-table">
+              <tr>
+                <th>Metric Result</th>
+                <th>Compliance Status</th>
+                <th>Action</th>
+              </tr>
+              <tr>
+                <td>All ≥ 85% (4-gram ≥ 90%)</td>
+                <td>✅ <strong>PASS</strong> - Meets requirement</td>
+                <td>Submit with confidence</td>
+              </tr>
+              <tr>
+                <td>4-gram: 75–89%</td>
+                <td>⚠️ <strong>REVIEW</strong> - Minor rewording</td>
+                <td>Check if acceptable per rubric; consider manual fix</td>
+              </tr>
+              <tr>
+                <td>4-gram: &lt; 75%</td>
+                <td>❌ <strong>FAIL</strong> - Does not meet requirement</td>
+                <td>
+                  Reject extraction; review LLM output; manual correction needed
+                </td>
+              </tr>
+            </div>
+
+            <p><strong>Red Flags to Watch For:</strong></p>
+            <ul>
+              <li>
+                <span class="highlight">1-gram &lt; 80%:</span> LLM introduced
+                new vocabulary. Possible hallucination.
+              </li>
+              <li>
+                <span class="highlight">High 1-gram, Low 4-gram:</span> Same
+                words used but reordered/compressed. Likely paraphrasing.
+              </li>
+              <li>
+                <span class="highlight">Multiple PARAPHRASED fields:</span> LLM
+                is not suitable for this task; consider rule-based extraction.
+              </li>
+              <li>
+                <span class="highlight">Values not in PDF:</span> LLM
+                hallucinated; definitely reject.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- TIPS AND BEST PRACTICES SECTION -->
+        <div class="section">
+          <h2>💡 Tips & Best Practices</h2>
+
+          <div class="metric-card">
+            <h3>For Best Results:</h3>
+            <ul>
+              <li>
+                <strong>Use digital PDFs:</strong> Scanned PDFs may have OCR
+                errors, leading to mismatches even if extraction is correct.
+              </li>
+              <li>
+                <strong>Review PARAPHRASED fields immediately:</strong> Don't
+                submit extractions with low 4-gram scores without manual review.
+              </li>
+              <li>
+                <strong>Check context:</strong> If a field has high 1-gram but
+                low 4-gram, read the top "missing n-grams" to see what changed.
+              </li>
+              <li>
+                <strong>Trust the 4-gram score most:</strong> For assignment
+                compliance, focus on the 4-gram precision as the primary
+                indicator of wording preservation.
+              </li>
+              <li>
+                <strong>Manual override:</strong> If the extraction is
+                functionally correct but has low n-gram scores due to necessary
+                abbreviation, you can manually approve it.
+              </li>
+            </ul>
+          </div>
+
+          <div class="metric-card">
+            <h3>Understanding Missing & Extra N-Grams:</h3>
+            <p>
+              <strong>Missing N-Grams:</strong> Sequences present in the
+              original PDF but absent from the extraction. Usually indicates:
+            </p>
+            <ul>
+              <li>Words/phrases were omitted (compression)</li>
+              <li>Synonyms were used (paraphrasing)</li>
+              <li>Word order was changed (restructuring)</li>
+            </ul>
+
+            <p>
+              <strong>Extra N-Grams:</strong> Sequences in the extraction not
+              found in the original PDF. Usually indicates:
+            </p>
+            <ul>
+              <li>LLM added new content (hallucination or context blending)</li>
+              <li>Different phrasing was used (paraphrasing)</li>
+              <li>Formatting or punctuation was altered (usually minor)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- REFERENCE SECTION -->
+        <div class="section">
+          <h2>📚 Reference</h2>
+
+          <div class="metric-card">
+            <h3>Summary of All Metrics</h3>
+            <table class="interpretation-table">
+              <tr>
+                <th>Metric</th>
+                <th>What It Measures</th>
+                <th>Ideal Range</th>
+                <th>Relevance to Assignment</th>
+              </tr>
+              <tr>
+                <td><strong>1-Gram</strong></td>
+                <td>Word-level vocabulary match</td>
+                <td>≥ 85%</td>
+                <td>Detects hallucination</td>
+              </tr>
+              <tr>
+                <td><strong>2-Gram</strong></td>
+                <td>Word-pair sequence match</td>
+                <td>≥ 80%</td>
+                <td>Detects word reordering</td>
+              </tr>
+              <tr>
+                <td><strong>3-Gram</strong></td>
+                <td>Phrase-level match</td>
+                <td>≥ 80%</td>
+                <td>Detects phrase rewording</td>
+              </tr>
+              <tr>
+                <td><strong>4-Gram</strong></td>
+                <td>Sentence structure & idiom match</td>
+                <td>≥ 90%</td>
+                <td><strong>PRIMARY COMPLIANCE INDICATOR</strong></td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="metric-card">
+            <h3>Common Questions</h3>
+            <p>
+              <strong>Q: Why is 4-gram the most important metric?</strong><br />
+              A: Because your assignment specifically requires "exact original
+              wording, sentence structure, and phrasing." 4-gram precision
+              directly measures whether sentence structure and multi-word
+              phrases are preserved, making it the best single indicator of
+              compliance.
+            </p>
+            <p>
+              <strong>Q: What if 1-gram is high but 4-gram is low?</strong
+              ><br />
+              A: This means the LLM used all the right words but rearranged them
+              or rewrote the sentences. This is still a form of paraphrasing and
+              does NOT meet the requirement. Reject or manually fix.
+            </p>
+            <p>
+              <strong>Q: Can I use extractions with "CLOSE" status?</strong
+              ><br />
+              A: Only if your assignment allows minor rewording or if you
+              manually verify the changes are acceptable. If the rubric demands
+              exact wording, use "EXACT" only.
+            </p>
+            <p>
+              <strong>Q: Why do I see 0% on some n-grams?</strong><br />
+              A: This typically means the value was significantly rewritten or
+              is entirely different from the PDF. The LLM may have hallucinated
+              or misunderstood the field. Reject and investigate.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          <strong>📊 Extraction Metrics Guide</strong> — Understanding quality
+          and compliance in AI-powered PDF extraction
+        </p>
+        <p>
+          <a href="/static/index.html">← Back to Extractor</a> |
+          <a href="/static/api.html">API Documentation →</a>
+        </p>
+        <p style="margin-top: 20px; font-size: 0.9em; color: #999">
+          Last updated: November 20, 2025
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

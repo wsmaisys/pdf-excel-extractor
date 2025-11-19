@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Docs — Semantic PDF Extraction Agent</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #f6f8fb;
+        color: #222;
+        padding: 24px;
+      }
+      .card {
+        max-width: 960px;
+        margin: 24px auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(30, 40, 60, 0.08);
+        overflow: hidden;
+      }
+      .hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 28px;
+      }
+      .hero h1 {
+        margin: 0 0 6px 0;
+        font-size: 1.6rem;
+      }
+      .hero p {
+        margin: 0;
+        opacity: 0.95;
+      }
+      .content {
+        padding: 24px;
+        line-height: 1.5;
+      }
+      pre {
+        background: #0b1220;
+        color: #cfe8ff;
+        padding: 12px;
+        border-radius: 6px;
+        overflow: auto;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.9rem;
+      }
+      code {
+        background: rgba(27, 31, 35, 0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .nav {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .nav a {
+        color: white;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 12px;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 700;
+      }
+      .section {
+        margin-bottom: 18px;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.95rem;
+      }
+      .important {
+        background: #fff3cd;
+        border-left: 4px solid #ffcc00;
+        padding: 10px 12px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="hero">
+        <div class="nav">
+          <div>
+            <h1>API Documentation</h1>
+            <p>
+              Use the HTTP API to upload PDFs, poll status, and download Excel
+              results
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <a href="index.html" style="text-decoration: none">← Back to App</a>
+            <a href="metrics.html" style="text-decoration: none"
+              >📊 Metrics Guide</a
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="section">
+          <div class="muted">Base URL (default local):</div>
+          <pre>http://localhost:8000</pre>
+        </div>
+
+        <hr />
+
+        <div class="section">
+          <h3>1) POST <code>/upload</code></h3>
+          <p>Upload a PDF file to start processing.</p>
+          <ul>
+            <li><strong>Method:</strong> POST</li>
+            <li><strong>Path:</strong> <code>/upload</code></li>
+            <li>
+              <strong>Content-Type:</strong> <code>multipart/form-data</code>
+            </li>
+            <li>
+              <strong>Form field:</strong> <code>file</code> (the PDF file)
+            </li>
+          </ul>
+
+          <div class="muted">Success response (HTTP 200):</div>
+          <pre>
+{
+  "job_id": "&lt;uuid&gt;"
+}</pre
+          >
+
+          <div class="section">
+            <div class="muted">Example (curl):</div>
+            <pre>
+curl -X POST "http://localhost:8000/upload" \
+  -F "file=@/path/to/document.pdf"</pre
+            >
+
+            <div class="muted">Example (Python requests):</div>
+            <pre>
+import requests
+url = "http://localhost:8000/upload"
+with open("document.pdf", "rb") as f:
+    r = requests.post(url, files={"file": f})
+print(r.json())</pre
+            >
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="section">
+          <h3>2) GET <code>/status/{job_id}</code></h3>
+          <p>
+            Poll the job status and retrieve logs, partial progress, and final
+            results.
+          </p>
+          <ul>
+            <li><strong>Method:</strong> GET</li>
+            <li><strong>Path:</strong> <code>/status/{job_id}</code></li>
+          </ul>
+
+          <div class="muted">
+            Response JSON structure (fields vary by state):
+          </div>
+          <pre>
+{
+  "job_id": "&lt;uuid&gt;",
+  "status": "pending|running|done|scanned|error",
+  "logs": ["...","..."],
+  "data": [
+    { "Key": "Full Name", "Value": "Vijay Kumar", "Comment": "" },
+    ...
+  ],
+  "eval_result": {
+    "avg_bleu": 0.848,
+    "coverage": 0.848,
+    "total_fields": 51,
+    "non_empty_fields": 44
+  }
+}</pre
+          >
+
+          <p class="muted">
+            <strong>Notes:</strong> <code>status</code> is the job state;
+            <code>done</code> indicates final results.
+            <code>scanned</code> means image-only PDF (OCR not supported).
+            <code>data</code> is an array of extracted rows (Key/Value/Comment)
+            for display.
+          </p>
+
+          <div class="section">
+            <div class="muted">Example (curl):</div>
+            <pre>curl "http://localhost:8000/status/&lt;job_id&gt;"</pre>
+
+            <div class="muted">Example (Python requests):</div>
+            <pre>
+import requests
+r = requests.get(f"http://localhost:8000/status/{job_id}")
+json_resp = r.json()
+print(json_resp["status"])  # pending|running|done</pre
+            >
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="section">
+          <h3>3) GET <code>/download/{job_id}</code></h3>
+          <p>Download the generated Excel file for a completed job.</p>
+          <ul>
+            <li><strong>Method:</strong> GET</li>
+            <li><strong>Path:</strong> <code>/download/{job_id}</code></li>
+            <li>
+              <strong>Response:</strong> 200 OK with
+              <code
+                >Content-Type:
+                application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</code
+              >
+            </li>
+          </ul>
+
+          <div class="muted">Example (curl):</div>
+          <pre>
+curl -o output.xlsx "http://localhost:8000/download/&lt;job_id&gt;"</pre
+          >
+
+          <div class="muted">Example (Python requests):</div>
+          <pre>
+import requests
+r = requests.get(f"http://localhost:8000/download/{job_id}")
+with open("output.xlsx", "wb") as f:
+    f.write(r.content)
+</pre
+          >
+
+          <div class="section important">
+            <strong>Important:</strong> the server does not persist Excel files
+            permanently. Download the file immediately after job completion.
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="section">
+          <h3>Error handling</h3>
+          <p class="muted">
+            If the upload is not a PDF or cannot be processed,
+            <code>/upload</code> may return HTTP 400 with a JSON error. If the
+            job fails due to LLM errors or unexpected conditions,
+            <code>/status/{job_id}</code> will include
+            <code>status: "error"</code> and logs describing the problem.
+          </p>
+        </div>
+
+        <div class="section">
+          <h3>Integration tips</h3>
+          <ul>
+            <li>
+              Poll <code>/status/{job_id}</code> every 1–3s for near-real-time
+              updates; use exponential backoff for many jobs.
+            </li>
+            <li>
+              For bulk processing, use <code>pipeline_runner.py</code> for CLI
+              batch runs.
+            </li>
+            <li>
+              Keep your API keys secure; do not embed them in client-side code.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
