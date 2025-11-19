@@ -1,7 +1,7 @@
 # 📊 PDF Excel Extractor
 
 > 🤖 AI-Powered Document Structuring & Data Extraction System
-> 
+>
 > Production-ready AI agent that extracts structured data from unstructured PDF documents using LLM-powered semantic analysis.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
@@ -24,9 +24,9 @@
 ## ⚠️ Important Note
 
 > **The application generates an Excel file for each job and serves it for download, but Excel files are not persisted permanently on the server.**
-> 
+>
 > ⚡ **Please download the Excel result immediately after the job completes.**
-> 
+>
 > The UI table is provided for visual inspection only and is not a stored copy of the Excel file.
 
 ---
@@ -41,6 +41,7 @@
 ### Installation
 
 1️⃣ **Clone the repository**
+
 ```bash
 git clone https://github.com/wsmaisys/pdf-excel-extractor.git
 cd pdf-excel-extractor
@@ -49,34 +50,40 @@ cd pdf-excel-extractor
 2️⃣ **Create and activate a Python virtual environment**
 
 **Windows (PowerShell):**
+
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
 **Linux/Mac:**
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
 3️⃣ **Install dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4️⃣ **Configure environment variables**
+
 ```bash
 cp .env.example .env
 # Edit .env and add your MISTRAL_API_KEY
 ```
 
 5️⃣ **Run the server**
+
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
 6️⃣ **Open the UI**
+
 ```
 http://localhost:8000
 ```
@@ -93,7 +100,7 @@ flowchart TD
     C --> D[🧠 Dynamic Schema Detection LLM]
     D --> E[⚡ Batch LLM Extraction - all keys]
     E --> F[🔄 Parse JSON → DataFrame]
-    F --> G[📊 Export Excel - Key | Value | Comment]
+    F --> G["📊 Export Excel - Key | Value | Comment"]
     E --> H[✅ Evaluation: BLEU + Coverage]
     H --> I[📈 Confidence Score]
     G --> J[⬇️ Download Excel]
@@ -140,14 +147,18 @@ pdf-excel-extractor/
 ### 🎯 Core Application
 
 #### `app/main.py`
+
 🚀 **FastAPI Server & Job Orchestrator**
+
 - Entry point for the application
 - Manages job lifecycle and background tasks
 - Handles file uploads and serves the web interface
 - Coordinates all pipeline components
 
 #### `static/index.html`
+
 🖥️ **Web User Interface**
+
 - Interactive upload interface
 - Real-time job status polling
 - Data table rendering
@@ -159,28 +170,36 @@ pdf-excel-extractor/
 ### 🔧 Pipeline Components
 
 #### `pipeline/schema_detector.py`
+
 🧠 **Dynamic Schema Detection**
+
 - Uses LLM to analyze PDF content
 - Automatically identifies relevant data fields
 - No hardcoded schemas required
 - Adapts to different document types
 
 #### `pipeline/llm_extractor.py`
+
 ⚡ **Batch LLM Extraction Engine**
+
 - Constructs optimized batch prompts
 - Single LLM API call for efficiency
 - Implements retry logic with exponential backoff
 - Extracts all key-value pairs simultaneously
 
 #### `pipeline/exporter.py`
+
 📊 **Data Export Module**
+
 - Converts JSON extraction results to pandas DataFrame
 - Generates Excel files with structured format
 - Columns: Key | Value | Comment
 - Handles data formatting and validation
 
 #### `pipeline/extract_kv.py`
+
 🔧 **Heuristic Post-Processor**
+
 - Optional refinement of extracted data
 - Pattern-based key-value pair detection
 - Enhances LLM extraction accuracy
@@ -191,7 +210,9 @@ pdf-excel-extractor/
 ### 🛠️ Utility Tools
 
 #### `tools/pdf_detection.py`
+
 🔍 **PDF Type Classifier**
+
 - Distinguishes between digital and scanned PDFs
 - Prevents processing of OCR-required documents
 - Fast pre-processing validation
@@ -202,7 +223,9 @@ pdf-excel-extractor/
 ### 📈 Evaluation System
 
 #### `evaluation/bleu_scorer.py`
+
 📊 **Quality Assessment Module**
+
 - Calculates BLEU scores for extraction accuracy
 - Measures field coverage completeness
 - Generates confidence scores (0-100%)
@@ -213,14 +236,18 @@ pdf-excel-extractor/
 ### 🔧 Additional Files
 
 #### `pipeline_runner.py`
+
 🖥️ **CLI Batch Runner**
+
 - Command-line interface for offline processing
 - Batch job execution without web server
 - Useful for automation and testing
 - Direct pipeline access
 
 #### `requirements.txt`
+
 📦 **Python Dependencies**
+
 - FastAPI and Uvicorn (web framework)
 - pandas, openpyxl (data processing)
 - PyPDF2 or pdfplumber (PDF parsing)
@@ -228,25 +255,33 @@ pdf-excel-extractor/
 - python-dotenv (environment management)
 
 #### `.env.example`
+
 🔑 **Environment Configuration Template**
+
 - API key placeholders
 - Server configuration defaults
 - Copy to `.env` and customize
 
 #### `Dockerfile`
+
 🐳 **Container Configuration**
+
 - Production deployment setup
 - Isolated environment
 - Easy scaling and distribution
 
 #### `plan.md`
+
 📝 **Project Planning Document**
+
 - Development roadmap
 - Feature specifications
 - Architecture decisions
 
 #### `API_DOCUMENTATION.md`
+
 📚 **Complete API Reference**
+
 - Endpoint specifications
 - Request/response schemas
 - cURL examples
@@ -257,22 +292,28 @@ pdf-excel-extractor/
 ## 🔌 API Endpoints
 
 ### 📤 Upload PDF
+
 ```http
 POST /upload
 Content-Type: multipart/form-data
 ```
+
 **Response:** `{ "job_id": "uuid" }`
 
 ### 📊 Check Status
+
 ```http
 GET /status/{job_id}
 ```
+
 **Response:** Job status, logs, extracted data, and evaluation results
 
 ### ⬇️ Download Excel
+
 ```http
 GET /download/{job_id}
 ```
+
 **Response:** Excel file download
 
 > 💡 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete examples with cURL and Python requests
@@ -299,19 +340,21 @@ GET /download/{job_id}
 ✅ **Resume Parsing** - Pull out skills, experience, education  
 ✅ **Contract Analysis** - Identify parties, dates, terms  
 ✅ **Report Mining** - Extract key metrics and findings  
-✅ **Form Digitization** - Convert filled forms to structured data  
+✅ **Form Digitization** - Convert filled forms to structured data
 
 ---
 
 ## 🚀 Deployment
 
 ### Docker Deployment
+
 ```bash
 docker build -t pdf-excel-extractor .
 docker run -p 8000:8000 --env-file .env pdf-excel-extractor
 ```
 
 ### Production Considerations
+
 - 🔐 Add authentication/authorization
 - 📊 Implement rate limiting
 - 💾 Add persistent storage for job history
@@ -323,11 +366,13 @@ docker run -p 8000:8000 --env-file .env pdf-excel-extractor
 ## 🧪 Testing
 
 ### Run CLI Pipeline
+
 ```bash
 python pipeline_runner.py --input sample.pdf --output results/
 ```
 
 ### API Testing
+
 Use the examples in `API_DOCUMENTATION.md` with cURL or Python requests library.
 
 ---
@@ -363,6 +408,7 @@ Created for **Turerz Sole Proprietorship**
 ## 📞 Support
 
 If you encounter any issues or have questions:
+
 - 📧 Open an issue on GitHub
 - 🔍 Review existing issues for solutions
 
