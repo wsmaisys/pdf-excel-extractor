@@ -1,6 +1,8 @@
 pypdf>=3.0.0
 pandas>=1.5.0
-openpyxl>=3.8.0
+# openpyxl 3.8 doesn't exist on PyPI for current platforms; pin to a compatible
+# modern version to allow Docker builds on python:3.11-slim
+openpyxl>=3.1.0
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-dotenv>=1.0.0
