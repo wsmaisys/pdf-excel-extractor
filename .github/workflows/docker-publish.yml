@@ -3,6 +3,7 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -24,6 +25,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Verify Docker Hub secrets
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "ERROR: Docker Hub secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN are not set."
+            echo "Set them in: Settings → Secrets and variables → Actions for this repository."
+            exit 1
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v4
