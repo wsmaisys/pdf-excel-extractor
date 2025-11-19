@@ -353,6 +353,21 @@ docker build -t pdf-excel-extractor .
 docker run -p 8000:8000 --env-file .env pdf-excel-extractor
 ```
 
+### Prebuilt Docker image (available on Docker Hub)
+
+A prebuilt image has been pushed to Docker Hub so you can pull and run
+without building locally. The image includes the LLM-enabled build.
+
+```bash
+# Pull the prebuilt image (LLM-enabled build)
+docker pull wasimansariiitm/pdf-excel-extractor:llm
+
+# Run the container and map port 8000 (reads .env for API keys)
+docker run -p 8000:8000 --env-file .env wasimansariiitm/pdf-excel-extractor:llm
+```
+
+Available tags: `latest`, `pdf-extractor`, `pdf-to-excel`, `fastapi`, `mistral-ai`, `llm`.
+
 ### Production Considerations
 
 - 🔐 Add authentication/authorization
