@@ -1,3 +1,10 @@
+"""Simple deterministic heuristics to extract key/value pairs from text blocks.
+
+These helpers are used as a fallback or for pre-processing text before LLM
+extraction. The core function `extract_kv_from_text_block` implements two
+patterns: explicit "Key: Value" lines and label-then-value blocks.
+"""
+
 import re
 from typing import List, Dict
 

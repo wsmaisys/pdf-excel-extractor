@@ -1,20 +1,36 @@
+"""Simple evaluation helpers for comparing extracted key/value pairs.
+
+This module provides utilities to compute exact-match statistics and a
+per-row similarity metric to help diagnose extraction differences.
+"""
+
 import json
 from typing import List, Dict
 from difflib import SequenceMatcher
 
 
 def exact_match(a: str, b: str) -> bool:
+    """Return True when two strings match after trimming; handles None values.
+
+    This is a strict equality check intended for exact-field comparisons.
+    """
     return (a or '').strip() == (b or '').strip()
 
 
 def similarity(a: str, b: str) -> float:
+    """Return a float in [0,1] representing character-sequence similarity.
+
+    Uses difflib.SequenceMatcher to provide a rough similarity score helpful
+    when exact-match fails (e.g., different date formats).
+    """
     return SequenceMatcher(None, a or '', b or '').ratio()
 
 
 def evaluate_exact_match(gold: List[Dict], pred: List[Dict]) -> Dict:
     """Compare gold and pred lists of dicts with keys 'key' and 'value'.
 
-    Returns report with counts and per-row diffs.
+    Returns a report containing counts and per-row diffs useful for debugging
+    extraction failures.
     """
     report = {'total_gold': len(gold), 'total_pred': len(pred), 'matches': 0, 'rows': []}
 

@@ -1,6 +1,8 @@
-"""
-Dynamic schema detection from unstructured text using LLM.
-Analyzes PDF content and determines what fields should be extracted.
+"""Dynamic schema detection using an LLM.
+
+This module asks the LLM to analyze a document's text and return a JSON
+array of suggested field names. The returned list is used as the extraction
+schema for downstream components.
 """
 
 import json
@@ -17,6 +19,7 @@ def detect_schema_from_text(text: str, max_keys: int = 40) -> List[str]:
     Returns list of suggested field names based on content analysis.
     """
     try:
+        # Use the LangChain Mistral adapter when available
         from langchain_mistralai import ChatMistralAI
         from langchain.schema import HumanMessage
     except ImportError:
@@ -57,7 +60,8 @@ Return format: ["Field Name 1", "Field Name 2", "Field Name 3", ...]
     
     import time
     print("  Detecting schema from text...")
-    time.sleep(2)  # Wait before API call
+    # Slight pause to make logs/readability nicer and avoid immediate throttling
+    time.sleep(2)
     
     try:
         message = HumanMessage(content=prompt)

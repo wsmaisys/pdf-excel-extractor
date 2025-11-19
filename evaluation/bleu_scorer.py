@@ -175,10 +175,11 @@ def evaluate_extraction_quality(extracted: List[Dict[str, str]], gold: List[Dict
         else:
             avg_bleu = max_bleu = min_bleu = 0.0
     else:
-        # When no gold is provided we cannot compute a true BLEU score.
-        # Previously this branch assigned 1.0 for any non-empty field which
-        # made `avg_bleu` equal to `coverage`. Instead, set BLEU values to None
-        # to avoid misleadingly high BLEU numbers when no reference is available.
+        # When no gold (reference) is provided we cannot compute a true BLEU
+        # score. Historically the code set BLEU==1.0 for non-empty fields which
+        # conflated BLEU with coverage. To avoid confusion we set BLEU-related
+        # aggregate values to None here and use `coverage` as the proxy metric
+        # for confidence when displaying results.
         avg_bleu = None
         max_bleu = None
         min_bleu = None

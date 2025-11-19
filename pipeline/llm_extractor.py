@@ -1,3 +1,11 @@
+"""LLM-backed extraction helpers.
+
+This module wraps calls to a Mistral-based LLM (via a LangChain adapter) to
+extract structured key/value pairs from a body of text. It contains a batch
+extractor (single API call for all keys), a simple heuristic fallback for
+offline/testing, and helpers to load a gold schema from Excel for evaluation.
+"""
+
 import json
 from typing import List, Dict
 import os
@@ -64,6 +72,7 @@ Example format (return EXACTLY like this, as pure JSON):
 ]
 """
     
+    # Informational logs for visibility in CLI or server logs
     print("  Sending batch extraction request to Mistral LLM...")
     print(f"  Total keys: {len(keys)}")
     
@@ -91,12 +100,11 @@ Example format (return EXACTLY like this, as pure JSON):
                 else:
                     raise
         
-        # Extract JSON from response
+        # Extract JSON array from the LLM's text response
         response_text = response.content
         print(f"  LLM Response length: {len(response_text)} chars")
         
-        # Parse JSON from response
-        # Try to extract JSON array from the response
+        # Parse JSON from response: try to extract a JSON array block
         import re
         json_match = re.search(r'\[[\s\S]*\]', response_text)
         if not json_match:
@@ -112,7 +120,7 @@ Example format (return EXACTLY like this, as pure JSON):
             print("  ERROR: LLM response is not a JSON array")
             return extract_with_llm_mistral_mock(text, keys)
         
-        # Ensure all rows have required fields
+        # Ensure all rows have required fields to make downstream code robust
         for row in rows:
             if 'key' not in row:
                 row['key'] = ''
@@ -140,8 +148,8 @@ def extract_with_llm_mistral_mock(text: str, keys: List[str]) -> List[Dict[str, 
     Used when Mistral API is unavailable or for testing.
     """
     rows = []
-    
-    # Simple heuristic: look for key patterns in text
+
+    # Simple heuristic: case-insensitive line-based search for "Key: Value" patterns
     lines = text.lower().split('\n')
     
     for i, key in enumerate(keys):
@@ -182,35 +190,41 @@ def extract_with_llm_mistral(text: str, keys: List[str] = None) -> List[Dict[str
     Batch approach: sends all keys + full text in ONE API call requesting JSON response.
     Falls back to mock if API unavailable or on error.
     """
-    # Dynamic schema detection if keys not provided
+    # If no keys provided, attempt to detect dynamic schema from the text first.
     if keys is None or len(keys) == 0:
         from pipeline.schema_detector import get_dynamic_schema
         keys = get_dynamic_schema(text)
         if not keys:
-            print("  WARNING: Failed to detect schema, using empty schema")
+            print("  WARNING: Failed to detect schema, returning empty result")
             return []
-    
+
     return extract_with_llm_mistral_batch(text, keys)
 
 
 def load_gold_schema(excel_path: str = 'Expected Output.xlsx') -> List[str]:
-    """Extract expected keys from gold standard Excel."""
+    """Read an Excel file and return the list of expected keys.
+
+    The function tries to locate a column named like 'Key' (case-insensitive)
+    and returns non-empty values from that column as the gold schema. If the
+    column cannot be found, a fallback heuristic is used.
+    """
     import pandas as pd
     try:
         df = pd.read_excel(excel_path, header=0)
-        
+
         # Find the 'Key' column (case-insensitive)
         key_col = None
         for col in df.columns:
             if 'key' in str(col).lower():
                 key_col = col
                 break
-        
+
         if key_col is None:
-            # If no 'Key' column found, use the second column (index 1)
+            # If no 'Key' column found, use the second column (index 1) as a fallback
             key_col = df.columns[1] if len(df.columns) > 1 else df.columns[0]
-        
+
         keys = df[key_col].dropna().tolist()
+        # Clean and filter common header tokens
         return [str(k).strip() for k in keys if k and str(k).strip() and str(k).strip() not in ['#', 'Key']]
     except Exception as e:
         print(f'Error reading gold schema: {e}')

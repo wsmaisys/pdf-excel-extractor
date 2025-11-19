@@ -1,3 +1,11 @@
+"""FastAPI application for PDF → Excel extraction.
+
+This module exposes a small REST API to upload PDFs, run the extraction
+pipeline in the background, poll job status, and download generated Excel
+files. It keeps a minimal in-memory job store (`JOBS`) for simplicity; for
+production deployments a persistent job queue and storage should be used.
+"""
+
 import os
 import uuid
 from pathlib import Path
@@ -10,6 +18,7 @@ from pipeline.exporter import json_to_excel
 
 load_dotenv()
 
+# Root folder of the repository and a temporary directory for job artifacts
 ROOT = Path(__file__).resolve().parent.parent
 TMP = ROOT / 'tmp'
 TMP.mkdir(exist_ok=True)
@@ -17,7 +26,8 @@ TMP.mkdir(exist_ok=True)
 app = FastAPI(title='PDF→Excel Agent')
 app.mount('/static', StaticFiles(directory=ROOT / 'static'), name='static')
 
-# in-memory job store for simplicity
+# Simple in-memory job store. Keys are job_id and values hold status/logs/results.
+# Note: this is intentionally lightweight for development/demo purposes.
 JOBS = {}
 
 
@@ -29,6 +39,11 @@ async def index():
 
 @app.post('/upload')
 async def upload(file: UploadFile = File(...), background: BackgroundTasks = None):
+    """Endpoint to upload a PDF file and start background processing.
+
+    Returns a `job_id` which can be used to poll `/status/{job_id}` and
+    download the result when ready via `/download/{job_id}`.
+    """
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail='Only PDF files supported')
     job_id = str(uuid.uuid4())
@@ -50,23 +65,24 @@ def log(job_id: str, message: str):
 
 
 def extract_context_for_key(full_text: str, key: str, value: str) -> str:
-    """Extract reference text from PDF containing the key/value pair.
-    
-    Heuristic: search for the key in the text and extract surrounding lines
-    as reference context.
+    """Return a small text snippet from `full_text` that references `key` or `value`.
+
+    This helper is used to provide context when computing evaluation metrics or
+    displaying where an extracted value came from. It searches for the key first
+    and falls back to searching for the value.
     """
     lines = full_text.split('\n')
     key_lower = key.lower().strip()
-    
+
+    # Search for a line mentioning the key and return a short window around it.
     for i, line in enumerate(lines):
         if key_lower in line.lower():
-            # Found a line mentioning the key; collect surrounding context
             start = max(0, i - 1)
             end = min(len(lines), i + 3)
             context = '\n'.join(lines[start:end])
             return context
-    
-    # Fallback: if value appears in text, return some context around it
+
+    # Fallback: search for the value instead and return a nearby window.
     value_lower = value.lower().strip()
     for i, line in enumerate(lines):
         if value_lower in line.lower():
@@ -74,39 +90,53 @@ def extract_context_for_key(full_text: str, key: str, value: str) -> str:
             end = min(len(lines), i + 2)
             context = '\n'.join(lines[start:end])
             return context
-    
+
     return None
 
 
 def process_job(job_id: str, pdf_path: str):
+    """Background worker that runs the extraction pipeline for a job.
+
+    Steps performed (high-level):
+      1. Detect PDF type (scanned vs digital)
+      2. Extract text from PDF
+      3. Detect dynamic schema using LLM
+      4. Extract values using LLM batch extractor
+      5. Compute n-gram metrics and evaluate quality
+      6. Export results to Excel and register output path
+
+    Any exception will mark the job as 'error' and the log will contain the
+    exception message for debugging.
+    """
     try:
         log(job_id, 'Detecting PDF type...')
         if is_scanned(pdf_path):
             log(job_id, 'PDF appears scanned. Stopping (no OCR path).')
             JOBS[job_id]['status'] = 'scanned'
             return
-        
+
+        # Extract full text from the PDF (simple concatenation of page text)
         log(job_id, 'Digital PDF detected; extracting text...')
         from pypdf import PdfReader
         reader = PdfReader(pdf_path)
         full_text = '\n'.join([page.extract_text() or '' for page in reader.pages])
         log(job_id, f'Extracted {len(full_text)} characters from PDF.')
-        
-        # Dynamic schema detection
+
+        # Dynamic schema detection using LLM
         log(job_id, 'Detecting schema from content...')
         from pipeline.schema_detector import get_dynamic_schema
         keys = get_dynamic_schema(full_text)
         if not keys:
             raise Exception('Failed to detect schema from content')
         log(job_id, f'Detected {len(keys)} fields from content.')
-        
-        # Use LLM batch extractor for semantic extraction
+
+        # Semantic extraction (batch LLM call)
         log(job_id, 'Extracting values via LLM...')
         from pipeline.llm_extractor import extract_with_llm_mistral
         rows = extract_with_llm_mistral(full_text, keys)
         log(job_id, f'Extracted {len(rows)} key:value pairs via LLM.')
-        
-        # Compute n-gram metrics for each field
+
+        # Compute n-gram metrics for each extracted field (optional enhancement)
         log(job_id, 'Computing n-gram metrics...')
         from evaluation.ngram_inspector import compare_ngrams
         ngram_metrics = {}
@@ -114,11 +144,11 @@ def process_job(job_id: str, pdf_path: str):
             key = row.get('key', '')
             value = row.get('value', '')
             if key and value:
-                # Extract reference text for this key from full_text (heuristic: get lines around key mention)
+                # Get a small reference text snippet around the key/value mention
                 ref_text = extract_context_for_key(full_text, key, value)
                 if ref_text:
                     metrics = compare_ngrams(ref_text, value, n_max=4)
-                    # Simplify to per-n precision and top missing
+                    # Keep a compact summary for UI and debugging
                     ngram_metrics[key] = {
                         'n1_precision': metrics[1]['precision'],
                         'n2_precision': metrics[2]['precision'],
@@ -127,26 +157,27 @@ def process_job(job_id: str, pdf_path: str):
                         'top_missing_3gram': metrics[3].get('top_missing', [])[:3],
                         'top_extra_3gram': metrics[3].get('top_extra', [])[:3],
                     }
-        
-        # Evaluate extraction quality
+
+        # Evaluate extraction quality (BLEU, coverage, etc.)
         log(job_id, 'Evaluating extraction quality...')
         from evaluation.bleu_scorer import evaluate_extraction_quality, format_confidence_score
         eval_result = evaluate_extraction_quality(rows)
         confidence_str = format_confidence_score(eval_result)
         log(job_id, f'{confidence_str}')
-        
+
+        # Save results into the job record
         JOBS[job_id]['status'] = 'extracted'
         JOBS[job_id]['rows'] = rows
         JOBS[job_id]['eval_result'] = eval_result
         JOBS[job_id]['schema'] = keys
         JOBS[job_id]['ngram_metrics'] = ngram_metrics
-        
-        # export to excel
+
+        # Export to Excel and register output path
         out_xlsx = Path(pdf_path).with_name('Output_' + Path(pdf_path).stem + '.xlsx')
         json_to_excel(rows, str(out_xlsx))
         JOBS[job_id]['out'] = str(out_xlsx)
-        
-        # Store data for display in UI
+
+        # Keep extracted data for UI rendering
         JOBS[job_id]['data'] = rows
         JOBS[job_id]['status'] = 'done'
         log(job_id, f'Wrote Excel to {out_xlsx}')
