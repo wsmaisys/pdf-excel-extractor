@@ -10,9 +10,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
-    libgfortran5 \
-    # Add any other necessary runtime libraries here (e.g., libatlas-base-dev for numpy/scipy)
-    # && rm -rf /var/lib/apt/lists/*  <-- DO NOT CLEAN UP YET
+    libgfortran5
 
 # 2. Python Dependency Installation
 # Copy requirements first to leverage Docker layer caching.
