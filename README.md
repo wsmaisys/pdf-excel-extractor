@@ -8,6 +8,8 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Live-blue?logo=googlecloud)](https://pdf-excel-extractor-912303930048.us-central1.run.app/)
+
 ---
 
 ## 🌟 Key Features
@@ -86,6 +88,12 @@ uvicorn app.main:app --reload --port 8000
 
 ```
 http://localhost:8000
+```
+
+Or use the live demo (Cloud Run):
+
+```
+https://pdf-excel-extractor-912303930048.us-central1.run.app/
 ```
 
 ---

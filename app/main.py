@@ -37,6 +37,17 @@ async def index():
     return HTMLResponse(html)
 
 
+@app.get('/favicon.ico')
+async def favicon():
+    """Serve a simple SVG favicon from the static directory to avoid 404 logs."""
+    fav = ROOT / 'static' / 'favicon.svg'
+    if fav.exists():
+        return FileResponse(fav, media_type='image/svg+xml')
+    # Fallback: no content to avoid 404 noise
+    from fastapi import Response
+    return Response(status_code=204)
+
+
 @app.post('/upload')
 async def upload(file: UploadFile = File(...), background: BackgroundTasks = None):
     """Endpoint to upload a PDF file and start background processing.
