@@ -7,8 +7,22 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Live-blue?logo=googlecloud)](https://pdf-excel-extractor-319169836562.us-central1.run.app/)
 
-[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Live-blue?logo=googlecloud)](https://pdf-excel-extractor-912303930048.us-central1.run.app/)
+---
+
+## 🎮 Try It Now - Live Demo
+
+### 🚀 **[OPEN LIVE DEMO](https://pdf-excel-extractor-319169836562.us-central1.run.app/)**
+
+**Live URL:** `https://pdf-excel-extractor-319169836562.us-central1.run.app/`
+
+> ⚠️ **Note:** The live demo runs on **Mistral's free tier API**.
+>
+> - 🐢 Processing may take **10-30 seconds** due to free tier rate limits
+> - ⏰ Please be patient and avoid rapid successive uploads
+> - 🎯 Each request waits ~2 seconds before calling the API to respect rate limits
+> - 💡 For production use, upgrade to a paid Mistral API plan for faster response times
 
 ---
 
@@ -23,13 +37,22 @@
 
 ---
 
-## ⚠️ Important Note
+## ⚠️ Important Notes
 
 > **The application generates an Excel file for each job and serves it for download, but Excel files are not persisted permanently on the server.**
 >
 > ⚡ **Please download the Excel result immediately after the job completes.**
 >
 > The UI table is provided for visual inspection only and is not a stored copy of the Excel file.
+
+> **Free Tier Limitations:**
+>
+> The live demo uses Mistral's free tier API with built-in rate limiting:
+>
+> - ⏱️ Expect **10-30 second latency** for processing
+> - 🚦 Requests are throttled to prevent API rate limit errors
+> - 📊 For production deployments, use a paid API key for instant processing
+> - ⌛ Your patience is appreciated while we optimize costs!
 
 ---
 
@@ -90,11 +113,7 @@ uvicorn app.main:app --reload --port 8000
 http://localhost:8000
 ```
 
-Or use the live demo (Cloud Run):
-
-```
-https://pdf-excel-extractor-912303930048.us-central1.run.app/
-```
+> 💡 **Tip:** For detailed API documentation, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ---
 
@@ -454,4 +473,5 @@ If you encounter any issues or have questions:
 ---
 
 **Yours Truly, Waseem M Ansari**
+
 ### wsmaisys@gmail.com
