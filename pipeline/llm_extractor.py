@@ -23,7 +23,7 @@ def extract_with_llm_mistral_batch(text: str, keys: List[str]) -> List[Dict[str,
     """
     try:
         from langchain_mistralai import ChatMistralAI
-        from langchain.schema import HumanMessage
+        from langchain_core.messages import HumanMessage
     except ImportError as e:
         print(f"  ERROR: langchain_mistralai not installed. Install with: pip install langchain_mistralai")
         print("  Falling back to heuristic extractor.\n")

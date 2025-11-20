@@ -21,7 +21,7 @@ def detect_schema_from_text(text: str, max_keys: int = 40) -> List[str]:
     try:
         # Use the LangChain Mistral adapter when available
         from langchain_mistralai import ChatMistralAI
-        from langchain.schema import HumanMessage
+        from langchain_core.messages import HumanMessage
     except ImportError:
         print("  ERROR: langchain_mistralai not installed")
         return []
