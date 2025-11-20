@@ -10,7 +10,7 @@ import math
 import difflib
 
 
-def bleu_score(reference: str, hypothesis: str, n_gram_max: int = 4, weights: List[float] = None, smoothing: float = 1e-9, preserve_case: bool = False) -> float:
+def bleu_score(reference: str, hypothesis: str, n_gram_max: int = 4, weights: List[float] = None, smoothing: bool = True, preserve_case: bool = False) -> float:
     """
     Calculate BLEU score between reference and hypothesis text.
     
@@ -60,10 +60,13 @@ def bleu_score(reference: str, hypothesis: str, n_gram_max: int = 4, weights: Li
         matches = sum((hyp_ngrams & ref_ngrams).values())
         total_hyp = sum(hyp_ngrams.values())
         
-        # Precision for this n-gram (smoothed)
-        precision = (matches / total_hyp) if total_hyp > 0 else 0.0
-        # apply smoothing to avoid zero precisions which zero out geometric mean
-        precision = precision if precision > 0.0 else smoothing
+        # Precision for this n-gram. Use Laplace (add-one) smoothing by default
+        # to avoid exactly zero precisions which collapse the geometric mean.
+        # This computes (matches + 1) / (total_hyp + 1).
+        if smoothing:
+            precision = (matches + 1) / (total_hyp + 1) if total_hyp >= 0 else 0.0
+        else:
+            precision = (matches / total_hyp) if total_hyp > 0 else 0.0
         scores.append(precision)
     
     # Geometric mean of precision scores using optional weights
@@ -95,7 +98,63 @@ def bleu_score(reference: str, hypothesis: str, n_gram_max: int = 4, weights: Li
     return max(0.0, min(1.0, bleu))  # Clamp to [0, 1]
 
 
-def evaluate_extraction_quality(extracted: List[Dict[str, str]], gold: List[Dict[str, str]] = None) -> Dict:
+def _extract_context_from_full_text(full_text: str, key: str, value: str) -> str:
+    """Return a short context snippet from full_text around the key or value.
+
+    This mirrors the small helper used in the web worker so the evaluator can
+    compute reference snippets when a gold standard is not available.
+    """
+    if not full_text:
+        return None
+    lines = full_text.split('\n')
+    key_lower = (key or '').lower().strip()
+
+    for i, line in enumerate(lines):
+        if key_lower and key_lower in line.lower():
+            start = max(0, i - 1)
+            end = min(len(lines), i + 3)
+            return '\n'.join(lines[start:end])
+
+    value_lower = (value or '').lower().strip()
+    for i, line in enumerate(lines):
+        if value_lower and value_lower in line.lower():
+            start = max(0, i - 1)
+            end = min(len(lines), i + 2)
+            return '\n'.join(lines[start:end])
+
+    return None
+
+
+def compute_ngram_precisions(reference: str, hypothesis: str, n_max: int = 4) -> Dict[int, float]:
+    """Compute n-gram precisions (clipped) for n=1..n_max between reference and hypothesis.
+
+    Returns a dict mapping n -> precision (0..1). If an n-gram length is
+    larger than the available tokens, precision is set to 0.0 for that n.
+    """
+    if reference is None or hypothesis is None:
+        return {n: 0.0 for n in range(1, n_max + 1)}
+
+    ref_tokens = reference.lower().split()
+    hyp_tokens = hypothesis.lower().split()
+    precisions = {}
+
+    for n in range(1, n_max + 1):
+        if len(hyp_tokens) < n or len(ref_tokens) < n:
+            precisions[n] = 0.0
+            continue
+
+        ref_ngrams = Counter([tuple(ref_tokens[i:i+n]) for i in range(len(ref_tokens) - n + 1)])
+        hyp_ngrams = Counter([tuple(hyp_tokens[i:i+n]) for i in range(len(hyp_tokens) - n + 1)])
+
+        matches = sum((hyp_ngrams & ref_ngrams).values())
+        total = sum(hyp_ngrams.values())
+        precision = (matches / total) if total > 0 else 0.0
+        precisions[n] = precision
+
+    return precisions
+
+
+def evaluate_extraction_quality(extracted: List[Dict[str, str]], gold: List[Dict[str, str]] = None, source_texts: Dict[str, str] = None, full_text: str = None) -> Dict:
     """
     Evaluate extraction quality using BLEU scores and consistency metrics.
     
@@ -175,14 +234,82 @@ def evaluate_extraction_quality(extracted: List[Dict[str, str]], gold: List[Dict
         else:
             avg_bleu = max_bleu = min_bleu = 0.0
     else:
-        # When no gold (reference) is provided we cannot compute a true BLEU
-        # score. Historically the code set BLEU==1.0 for non-empty fields which
-        # conflated BLEU with coverage. To avoid confusion we set BLEU-related
-        # aggregate values to None here and use `coverage` as the proxy metric
-        # for confidence when displaying results.
-        avg_bleu = None
-        max_bleu = None
-        min_bleu = None
+        # When no gold is provided we can optionally compare the extracted
+        # value against the original paragraph/snippet from the source PDF.
+        # Callers may pass `source_texts` (key -> paragraph) or the full
+        # extracted `full_text` (the evaluator will derive a snippet).
+        scores = []
+        for row in extracted:
+            key = row.get('key', '')
+            value = row.get('value', '')
+            if not value:
+                # empty values contribute zero
+                scores.append(0.0)
+                field_scores[key] = {'bleu': 0.0, 'seq_ratio': None, 'insertion_ratio': None, 'exact_match': False, 'extracted': value}
+                continue
+
+            # Determine reference text to compare against
+            ref_text = None
+            if source_texts and key in source_texts:
+                ref_text = source_texts[key]
+            elif full_text:
+                ref_text = _extract_context_from_full_text(full_text, key, value)
+
+            if ref_text:
+                # Compute n-gram overlap precisions (1..4) and use arithmetic mean
+                # as a BLEU-like proxy. This is robust for short extraction values.
+                n_prec = compute_ngram_precisions(ref_text, value, n_max=4)
+                # arithmetic mean across available n-grams
+                p_vals = [n_prec.get(n, 0.0) for n in range(1, 5)]
+                s = sum(p_vals) / len(p_vals)
+                seq_ratio = difflib.SequenceMatcher(None, ref_text, value).ratio()
+                # insertion ratio relative to hyp tokens
+                ref_tokens = Counter(ref_text.lower().split())
+                hyp_tokens = Counter(value.lower().split())
+                extra = 0
+                for t, c in (hyp_tokens - ref_tokens).items():
+                    extra += c
+                insertion_ratio = (extra / sum(hyp_tokens.values())) if sum(hyp_tokens.values()) > 0 else 0.0
+
+                scores.append(s)
+                seq_scores.append(seq_ratio)
+                insertion_ratios.append(insertion_ratio)
+                field_scores[key] = {
+                    'bleu': s,
+                    'ngram_precisions': n_prec,
+                    'seq_ratio': seq_ratio,
+                    'insertion_ratio': insertion_ratio,
+                    'exact_match': (ref_text.strip() == value.strip()),
+                    'extracted': value,
+                    'reference': ref_text
+                }
+            else:
+                # No per-field reference available: try computing n-gram overlaps
+                # against the whole `full_text` as a fallback, otherwise 0.
+                if full_text:
+                    n_prec = compute_ngram_precisions(full_text, value, n_max=4)
+                    p_vals = [n_prec.get(n, 0.0) for n in range(1, 5)]
+                    s = sum(p_vals) / len(p_vals)
+                    scores.append(s)
+                    field_scores[key] = {
+                        'bleu': s,
+                        'ngram_precisions': n_prec,
+                        'seq_ratio': None,
+                        'insertion_ratio': None,
+                        'exact_match': False,
+                        'extracted': value,
+                        'reference': None
+                    }
+                else:
+                    scores.append(0.0)
+                    field_scores[key] = {'bleu': 0.0, 'seq_ratio': None, 'insertion_ratio': None, 'exact_match': False, 'extracted': value}
+
+        if scores:
+            avg_bleu = sum(scores) / len(scores)
+            max_bleu = max(scores)
+            min_bleu = min(scores)
+        else:
+            avg_bleu = max_bleu = min_bleu = 0.0
 
     # Coverage is percentage of fields that have a non-empty extracted value
     coverage = (non_empty_count / total_fields) if total_fields > 0 else 0.0

@@ -161,7 +161,9 @@ def process_job(job_id: str, pdf_path: str):
         # Evaluate extraction quality (BLEU, coverage, etc.)
         log(job_id, 'Evaluating extraction quality...')
         from evaluation.bleu_scorer import evaluate_extraction_quality, format_confidence_score
-        eval_result = evaluate_extraction_quality(rows)
+        # Pass the full extracted text so the evaluator can derive reference
+        # snippets when a gold standard is not available.
+        eval_result = evaluate_extraction_quality(rows, full_text=full_text)
         confidence_str = format_confidence_score(eval_result)
         log(job_id, f'{confidence_str}')
 

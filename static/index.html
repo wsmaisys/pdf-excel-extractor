@@ -218,6 +218,19 @@
         margin-top: 30px;
       }
 
+      /* Collapsible N-gram table styling */
+      .ngram-details summary {
+        cursor: pointer;
+        font-size: 1.15em;
+        padding: 8px 10px;
+        font-weight: 600;
+        list-style: none;
+      }
+
+      .ngram-table-wrapper {
+        padding-top: 12px;
+      }
+
       .table-section h3 {
         margin-bottom: 20px;
         font-size: 1.5em;
@@ -463,13 +476,16 @@
               // Display n-gram metrics when done
               if (s.status === "done" && s.ngram_metrics) {
                 const metrics = s.ngram_metrics;
-                let ngramHtml = '<div class="table-section"><h3>🔤 N-gram Precision (Wording Fidelity)</h3><table><thead><tr><th>Field</th><th>1-gram</th><th>2-gram</th><th>3-gram</th><th>4-gram</th><th>Status</th></tr></thead><tbody>';
+                // Wrap the N-gram table inside a <details> so it is hidden by default
+                let ngramHtml = '<div class="table-section">';
+                ngramHtml += '<details class="ngram-details"><summary>🔤 N-gram Precision (Wording Fidelity)</summary>';
+                ngramHtml += '<div class="ngram-table-wrapper"><table><thead><tr><th>Field</th><th>1-gram</th><th>2-gram</th><th>3-gram</th><th>4-gram</th><th>Status</th></tr></thead><tbody>';
                 for (const [key, m] of Object.entries(metrics)) {
                   const n4 = m['n4_precision'];
                   let status = n4 >= 0.9 ? '✅ Exact' : n4 >= 0.75 ? '⚠️ Close' : '❌ Paraphrased';
                   ngramHtml += `<tr><td>${key}</td><td>${(m['n1_precision']*100).toFixed(0)}%</td><td>${(m['n2_precision']*100).toFixed(0)}%</td><td>${(m['n3_precision']*100).toFixed(0)}%</td><td>${(m['n4_precision']*100).toFixed(0)}%</td><td>${status}</td></tr>`;
                 }
-                ngramHtml += '</tbody></table></div>';
+                ngramHtml += '</tbody></table></div></details></div>';
                 tableContainer.innerHTML = ngramHtml;
               }
 

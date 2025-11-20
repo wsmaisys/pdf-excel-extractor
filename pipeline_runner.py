@@ -53,7 +53,9 @@ def run_pipeline(pdf_path: str, output_xlsx: str = None, gold_json: str = None):
 
     # 5) Evaluation
     print(f"[5] Evaluating extraction quality...")
-    eval_result = evaluate_extraction_quality(rows)
+    # Provide the full extracted text so the evaluator can derive snippet
+    # references when a gold standard is not supplied.
+    eval_result = evaluate_extraction_quality(rows, full_text=full_text)
     confidence_str = format_confidence_score(eval_result)
     print(f"  {confidence_str}")
 

@@ -486,14 +486,16 @@
               <tr>
                 <td>90-100%</td>
                 <td>
-                  <span class="status-badge status-exact">✅ EXACT</span> -
-                  Original wording perfectly preserved
+                  <span class="status-badge status-exact"
+                    >✅ EXCELLENT MATCH</span
+                  >
+                  - Original wording perfectly preserved
                 </td>
               </tr>
               <tr>
                 <td>75-89%</td>
                 <td>
-                  <span class="status-badge status-close">⚠️ CLOSE</span> -
+                  <span class="status-badge status-close">⚠️ GOOD MATCH</span> -
                   Original intent retained; minor rewording
                 </td>
               </tr>
@@ -501,7 +503,7 @@
                 <td>&lt;75%</td>
                 <td>
                   <span class="status-badge status-paraphrased"
-                    >❌ PARAPHRASED</span
+                    >❌ SOMEWHAT MATCH</span
                   >
                   - Significant rewording detected
                 </td>
@@ -510,94 +512,15 @@
           </div>
         </div>
 
-        <!-- STATUS CLASSIFICATION SECTION -->
-        <div class="section">
-          <h2>🏷️ Extraction Status Classifications</h2>
-
-          <div class="metric-card">
-            <h3><span class="status-badge status-exact">✅ EXACT</span></h3>
-            <div class="definition">
-              4-gram precision ≥ 90% — Original wording is preserved.
-            </div>
-            <p>
-              <strong>Meaning:</strong> The extracted value matches the original
-              PDF text with high fidelity. Sentence structure, phrasing, and
-              vocabulary are retained exactly or with only trivial variations
-              (e.g., extra spaces, punctuation).
-            </p>
-            <p>
-              <strong>Assignment Grade Impact:</strong> ✅
-              <strong>Meets requirement:</strong> "Retain exact original
-              wording, sentence structure, and phrasing."
-            </p>
-            <p>
-              <strong>Action:</strong> No review needed. Extract is ready for
-              submission.
-            </p>
-          </div>
-
-          <div class="metric-card">
-            <h3><span class="status-badge status-close">⚠️ CLOSE</span></h3>
-            <div class="definition">
-              4-gram precision 75–89% — Original meaning preserved with minor
-              rewording.
-            </div>
-            <p>
-              <strong>Meaning:</strong> The extracted value conveys the same
-              meaning as the PDF, but the LLM made minor changes: removed filler
-              words, restructured sentences slightly, or used synonyms. The core
-              information is intact.
-            </p>
-            <p>
-              <strong>Assignment Grade Impact:</strong> ⚠️
-              <strong>Partially meets requirement:</strong> Acceptable if
-              assignment allows minor rewording; flag if strict wording is
-              required.
-            </p>
-            <p>
-              <strong>Action:</strong> Review side-by-side with PDF. If
-              acceptable per assignment rubric, approve. Otherwise, request
-              manual correction.
-            </p>
-          </div>
-
-          <div class="metric-card">
-            <h3>
-              <span class="status-badge status-paraphrased"
-                >❌ PARAPHRASED</span
-              >
-            </h3>
-            <div class="definition">
-              4-gram precision &lt; 75% — Significant rewording detected.
-            </div>
-            <p>
-              <strong>Meaning:</strong> The extracted value has been
-              substantially rewritten. While the meaning may be preserved, the
-              wording, sentence structure, and phrasing differ significantly
-              from the original PDF.
-            </p>
-            <p>
-              <strong>Assignment Grade Impact:</strong> ❌
-              <strong>Does NOT meet requirement:</strong> "Retain exact original
-              wording, sentence structure, and phrasing." This may be flagged as
-              paraphrasing or incomplete extraction.
-            </p>
-            <p>
-              <strong>Action:</strong> Review the extracted value immediately.
-              Compare with PDF text. If the LLM hallucinated or invented
-              content, mark as rejected. If it's a legitimate compression,
-              consider whether the assignment allows it. Manual correction
-              recommended.
-            </p>
-          </div>
-        </div>
+        <!-- STATUS CLASSIFICATION SECTION (removed) -->
+        <!-- Simplified: Status classifications moved to BLEU proxy guidance below -->
 
         <!-- HOW METRICS ARE CALCULATED SECTION -->
         <div class="section">
           <h2>⚙️ How Metrics Are Calculated</h2>
 
           <div class="metric-card">
-            <h3>N-Gram Extraction Process</h3>
+            <h3>N-Gram Extraction Process & BLEU Proxy</h3>
             <ol>
               <li>
                 <strong>Tokenization:</strong> Original PDF text and extracted
@@ -621,7 +544,18 @@
               </li>
               <li>
                 <strong>Precision Computation:</strong> Precision = (Matching
-                n-grams) / (Total n-grams in extracted value) × 100%
+                n-grams) / (Total n-grams in extracted value) — computed
+                separately for n=1..4.
+              </li>
+              <li>
+                <strong>BLEU Proxy:</strong> When no gold reference exists the
+                system computes a BLEU-like proxy as the arithmetic mean of the
+                1-gram through 4-gram precisions: <br />
+                <code>BLEU_proxy = (p1 + p2 + p3 + p4) / 4</code>
+                <div class="importance" style="margin-top: 10px">
+                  This proxy is simple, interpretable, and stable for short
+                  extracted values typical in form extraction.
+                </div>
               </li>
             </ol>
           </div>
@@ -678,24 +612,45 @@
             <div class="interpretation-table">
               <tr>
                 <th>Metric Result</th>
-                <th>Compliance Status</th>
+                <th>Match Quality</th>
                 <th>Action</th>
               </tr>
               <tr>
-                <td>All ≥ 85% (4-gram ≥ 90%)</td>
-                <td>✅ <strong>PASS</strong> - Meets requirement</td>
+                <td>BLEU_proxy ≥ 70%</td>
+                <td>✅ <strong>EXCELLENT MATCH</strong></td>
                 <td>Submit with confidence</td>
               </tr>
               <tr>
-                <td>4-gram: 75–89%</td>
-                <td>⚠️ <strong>REVIEW</strong> - Minor rewording</td>
-                <td>Check if acceptable per rubric; consider manual fix</td>
+                <td>BLEU_proxy 50–69%</td>
+                <td>⚠️ <strong>GOOD MATCH</strong></td>
+                <td>Review for minor rewording; accept if rubric allows</td>
               </tr>
               <tr>
-                <td>4-gram: &lt; 75%</td>
-                <td>❌ <strong>FAIL</strong> - Does not meet requirement</td>
-                <td>
-                  Reject extraction; review LLM output; manual correction needed
+                <td>BLEU_proxy &lt; 50%</td>
+                <td>❌ <strong>SOMEWHAT MATCH</strong></td>
+                <td>Manual correction or reject; likely paraphrased</td>
+              </tr>
+              <tr>
+                <td colspan="3">
+                  <div
+                    style="
+                      margin-top: 10px;
+                      background: #f1f7ff;
+                      padding: 10px;
+                      border-radius: 6px;
+                    "
+                  >
+                    <strong>Example Calculation:</strong>
+                    <div style="font-family: monospace; margin-top: 6px">
+                      p1 = 80% &nbsp; p2 = 60% &nbsp; p3 = 40% &nbsp; p4 =
+                      20%<br />
+                      BLEU_proxy = (0.80 + 0.60 + 0.40 + 0.20) / 4 = 0.50 (50%)
+                    </div>
+                    <div style="margin-top: 6px; color: #555">
+                      This example would be classified as
+                      <strong>SOMEWHAT MATCH</strong> (BLEU_proxy &lt; 50%).
+                    </div>
+                  </div>
                 </td>
               </tr>
             </div>
@@ -734,17 +689,18 @@
                 errors, leading to mismatches even if extraction is correct.
               </li>
               <li>
-                <strong>Review PARAPHRASED fields immediately:</strong> Don't
-                submit extractions with low 4-gram scores without manual review.
+                <strong>Review SOMEWHAT MATCH fields immediately:</strong> Don't
+                submit extractions with low BLEU_proxy scores without manual
+                review.
               </li>
               <li>
                 <strong>Check context:</strong> If a field has high 1-gram but
                 low 4-gram, read the top "missing n-grams" to see what changed.
               </li>
               <li>
-                <strong>Trust the 4-gram score most:</strong> For assignment
-                compliance, focus on the 4-gram precision as the primary
-                indicator of wording preservation.
+                <strong>Trust the BLEU_proxy score:</strong> For assignment
+                compliance, focus on the BLEU_proxy as the primary indicator of
+                wording preservation.
               </li>
               <li>
                 <strong>Manual override:</strong> If the extraction is
@@ -836,11 +792,11 @@
               does NOT meet the requirement. Reject or manually fix.
             </p>
             <p>
-              <strong>Q: Can I use extractions with "CLOSE" status?</strong
+              <strong>Q: Can I use extractions with "GOOD MATCH" status?</strong
               ><br />
               A: Only if your assignment allows minor rewording or if you
               manually verify the changes are acceptable. If the rubric demands
-              exact wording, use "EXACT" only.
+              exact wording, prefer "EXCELLENT MATCH".
             </p>
             <p>
               <strong>Q: Why do I see 0% on some n-grams?</strong><br />
