@@ -450,4 +450,7 @@ If you encounter any issues or have questions:
 ---
 
 **Made with ❤️ and 🤖 AI**
+
+---
+
 **Yours Truly, Waseem M Ansari**
